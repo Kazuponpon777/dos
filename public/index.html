@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screenshot Automation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Screenshot Automation</h1>
+
+        <div class="form-group">
+            <label for="mode">Mode</label>
+            <select id="mode" onchange="toggleFields()">
+                <option value="web-scroll">Web - Scroll Mode</option>
+                <option value="web-slide">Web - Slide Mode</option>
+                <option value="desktop-slide">Desktop - Slide Mode</option>
+            </select>
+        </div>
+
+        <div id="web-fields">
+            <div class="form-group">
+                <label for="url">Target URL</label>
+                <input type="text" id="url" placeholder="https://example.com"
+                    value="https://magazine.rakuten.co.jp/read/C8A0B4CD227432A3F4F056A3429AD757">
+            </div>
+        </div>
+
+        <div id="slide-fields" style="display: none;">
+            <div class="form-group">
+                <label for="direction">Slide Direction</label>
+                <select id="direction">
+                    <option value="ArrowRight">Right (→)</option>
+                    <option value="ArrowLeft">Left (←)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="maxPages">Max Pages</label>
+                <input type="number" id="maxPages" value="20">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="outputFilename">Output Filename</label>
+            <input type="text" id="outputFilename" value="result">
+        </div>
+
+        <div class="form-group">
+            <label for="delay">Delay (ms)</label>
+            <input type="number" id="delay" value="1000">
+        </div>
+
+        <div id="web-options" class="form-group">
+            <label>
+                <input type="checkbox" id="loginRequired"> Login Required (Wait for manual login)
+            </label>
+        </div>
+
+        <button id="startBtn" onclick="startProcess()">Start Capture</button>
+        <button id="continueBtn" onclick="sendContinue()"
+            style="display: none; background-color: #27ae60; margin-top: 10px;">Continue (Start Capture)</button>
+
+        <div class="logs" id="logs">
+            <h3>Logs</h3>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleFields() {
+            const mode = document.getElementById('mode').value;
+            const webFields = document.getElementById('web-fields');
+            const slideFields = document.getElementById('slide-fields');
+
+            if (mode.startsWith('web')) {
+                webFields.style.display = 'block';
+            } else {
+                webFields.style.display = 'none';
+            }
+
+            if (mode.includes('slide')) {
+                slideFields.style.display = 'block';
+            } else {
+                slideFields.style.display = 'none';
+            }
+        }
+
+        // Initial toggle
+        toggleFields();
+
+        const logContent = document.getElementById('log-content');
+        const eventSource = new EventSource('/events');
+
+        eventSource.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const p = document.createElement('p');
+            p.textContent = data.message;
+            logContent.appendChild(p);
+            logContent.scrollTop = logContent.scrollHeight;
+        };
+
+        async function startProcess() {
+            const startBtn = document.getElementById('startBtn');
+            const continueBtn = document.getElementById('continueBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = 'Running...';
+            logContent.innerHTML = ''; // Clear logs
+
+            const config = {
+                mode: document.getElementById('mode').value,
+                url: document.getElementById('url').value,
+                outputFilename: document.getElementById('outputFilename').value,
+                loginRequired: document.getElementById('loginRequired').checked,
+                slide: {
+                    nextKey: document.getElementById('direction').value,
+                    maxPages: parseInt(document.getElementById('maxPages').value),
+                    delay: parseInt(document.getElementById('delay').value)
+                },
+                scroll: {
+                    delay: parseInt(document.getElementById('delay').value),
+                    outputType: 'pdf'
+                }
+            };
+
+            // If login required, show continue button
+            if (config.loginRequired && config.mode.startsWith('web')) {
+                continueBtn.style.display = 'block';
+            }
+
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Request failed: ' + error);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Capture';
+                continueBtn.style.display = 'none';
+            }
+        }
+
+        async function sendContinue() {
+            try {
+                await fetch('/api/continue', { method: 'POST' });
+                document.getElementById('continueBtn').style.display = 'none';
+            } catch (error) {
+                alert('Failed to send continue signal: ' + error);
+            }
+        }
+    </script>
+</body>
+
+</html>

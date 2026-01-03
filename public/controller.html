@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>スクリーンキャプチャ コントローラー</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="main-layout">
+      <!-- 左サイドパネル: 使い方ガイド -->
+      <aside class="side-panel left-panel">
+        <h2>📖 使い方ガイド</h2>
+        
+        <div class="guide-section">
+          <h3>基本操作</h3>
+          <ol>
+            <li><strong>ブラウザ起動</strong>をクリック</li>
+            <li>起動したブラウザで対象ページに移動</li>
+            <li><strong>総ページ数</strong>を入力</li>
+            <li><strong>開始</strong>をクリック</li>
+            <li>自動でページ送り＆キャプチャ</li>
+            <li><strong>停止して保存</strong>でPDF作成</li>
+          </ol>
+        </div>
+        
+        <div class="guide-section">
+          <h3>範囲設定</h3>
+          <p>画面の一部だけをキャプチャしたい場合：</p>
+          <ol>
+            <li><strong>範囲設定</strong>をクリック</li>
+            <li>ブラウザ上でドラッグして範囲選択</li>
+            <li>赤枠で選択範囲を確認</li>
+          </ol>
+        </div>
+        
+        <div class="guide-section">
+          <h3>設定項目</h3>
+          <ul>
+            <li><strong>待機時間</strong>: ページ読み込み待ち秒数</li>
+            <li><strong>ページ送り方向</strong>: 矢印キーの方向</li>
+            <li><strong>画像形式</strong>: PNG（高画質）/JPEG（軽量）</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- 中央: コントローラー -->
+      <div class="container">
+        <header>
+          <div class="status-indicator" id="status-indicator">
+            <div class="status-dot"></div>
+            <span id="status-text">未接続</span>
+          </div>
+          <h1>スマートキャプチャ</h1>
+        </header>
+
+        <section class="control-panel">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <label>現在のページ</label>
+              <span id="captured-count">0</span>
+            </div>
+            <div class="stat-item">
+              <label>総ページ数</label>
+              <input type="number" id="total-pages" value="100" min="1" />
+            </div>
+          </div>
+
+          <div class="main-controls">
+            <button id="btn-start" class="btn btn-primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              開始
+            </button>
+            <button id="btn-pause" class="btn btn-secondary hidden">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              一時停止
+            </button>
+            <button id="btn-stop" class="btn btn-danger" disabled>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+              停止して保存
+            </button>
+          </div>
+
+          <div class="tools-panel">
+            <button id="btn-trim" class="btn btn-tool">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 21H3V3"></path>
+                <path d="M21 3v18"></path>
+                <path d="M3 21h18"></path>
+                <path d="M3 3h18v18H3z"></path>
+              </svg>
+              範囲設定
+            </button>
+            <button id="btn-browser" class="btn btn-tool">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              ブラウザ起動
+            </button>
+          </div>
+
+          <div class="settings-panel">
+            <div class="settings-header">
+              <h3>設定</h3>
+              <div class="settings-actions">
+                <button id="btn-save-config" class="btn-small btn-success">保存</button>
+                <button id="btn-reset-config" class="btn-small btn-muted">リセット</button>
+              </div>
+            </div>
+            
+            <div class="setting-row">
+              <label>待機時間（秒）</label>
+              <input type="number" id="delay-input" value="5" min="1" step="0.5" />
+            </div>
+            
+            <div class="setting-row">
+              <label>ページ送り方向</label>
+              <select id="direction-select">
+                <option value="ArrowRight">→ 右（横書き）</option>
+                <option value="ArrowLeft">← 左（縦書き）</option>
+                <option value="ArrowDown">↓ 下</option>
+                <option value="ArrowUp">↑ 上</option>
+              </select>
+            </div>
+            
+            <div class="setting-row">
+              <label>リトライ回数</label>
+              <input type="number" id="retry-attempts" value="3" min="1" max="10" />
+            </div>
+            
+            <div class="setting-row">
+              <label>画像形式</label>
+              <select id="image-format">
+                <option value="png">PNG（高品質）</option>
+                <option value="jpeg">JPEG（軽量）</option>
+              </select>
+            </div>
+            
+            <div class="setting-row checkbox-row">
+              <label for="enable-ocr">OCR（文字検索可）</label>
+              <input type="checkbox" id="enable-ocr" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Trimming Status Text -->
+        <div id="trim-status" class="trim-status hidden">
+          範囲設定済み: <span id="trim-coords">なし</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progress-container" class="progress-container hidden">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <div class="progress-text">
+            <span id="progress-current">0</span>
+            <span id="progress-percent">0%</span>
+            <span id="progress-total">100</span>
+          </div>
+        </div>
+
+        <!-- Preview Thumbnails -->
+        <div id="preview-container" class="preview-container hidden">
+          <h3>プレビュー</h3>
+          <div id="preview-grid" class="preview-grid"></div>
+        </div>
+
+        <!-- History Panel -->
+        <div id="history-container" class="history-container">
+          <h3>履歴</h3>
+          <div id="history-list" class="history-list">
+            <p style="font-size: 11px; color: var(--text-muted); text-align: center;">キャプチャ履歴がありません</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドパネル: ショートカット＆ヒント -->
+      <aside class="side-panel right-panel">
+        <h2>⚡ クイックヒント</h2>
+        
+        <div class="guide-section">
+          <h3>ページ送り方向</h3>
+          <ul>
+            <li><strong>→ 右</strong>: 一般的な横書き資料</li>
+            <li><strong>← 左</strong>: 縦書き・右綴じ書籍</li>
+            <li><strong>↓ 下</strong>: 縦スクロールサイト</li>
+          </ul>
+        </div>
+        
+        <div class="guide-section">
+          <h3>推奨設定</h3>
+          <table class="hint-table">
+            <tr>
+              <td>高速回線</td>
+              <td>待機 3秒</td>
+            </tr>
+            <tr>
+              <td>重いサイト</td>
+              <td>待機 5-10秒</td>
+            </tr>
+            <tr>
+              <td>電子書籍</td>
+              <td>待機 2秒</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="guide-section">
+          <h3>トラブル時</h3>
+          <ul>
+            <li>ブラウザが起動しない → サーバー再起動</li>
+            <li>キャプチャが遅い → 待機時間を長く</li>
+            <li>重複ページ → 待機時間を短く</li>
+          </ul>
+        </div>
+        
+        <div class="guide-section version-info">
+          <p>Smart Capture v1.0</p>
+        </div>
+      </aside>
+    </div>
+    <script src="controller.js"></script>
+  </body>
+</html>
