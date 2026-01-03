@@ -56,6 +56,18 @@ const session = new CaptureSession(eventBus);
 // Batch Processor
 const batchProcessor = new BatchProcessor(session, eventBus);
 
+// Load initial config from configManager into session
+const initialConfig = configManager.getConfig();
+if (initialConfig.slide) {
+    if (initialConfig.slide.delay) session.config.delay = initialConfig.slide.delay;
+    if (initialConfig.slide.nextKey) session.config.nextKey = initialConfig.slide.nextKey;
+}
+if (initialConfig.capture) {
+    if (initialConfig.capture.retryAttempts) session.config.retryAttempts = initialConfig.capture.retryAttempts;
+    if (initialConfig.capture.imageFormat) session.config.imageFormat = initialConfig.capture.imageFormat;
+    if (initialConfig.capture.enableOcr !== undefined) session.config.enableOcr = initialConfig.capture.enableOcr;
+}
+
 // Hook up batch events to SSE
 eventBus.on('batch_progress', (data) => sendToClients({ type: 'batch_progress', ...data }));
 eventBus.on('batch_complete', (data) => sendToClients({ type: 'batch_complete', ...data }));
